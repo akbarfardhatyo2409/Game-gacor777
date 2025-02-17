@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slot Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+    }
+
+    #auth-container, #game-container {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    .slot-reel {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .reel {
+      width: 80px;
+      height: 80px;
+      border: 2px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin: 0 5px;
+      background-color: #fff;
+    }
+
+    .balance {
+      margin: 10px 0;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    #game-container {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="auth-container">
+    <h1>Slot Game</h1>
+    <input type="text" id="username" placeholder="Username" required>
+    <input type="password" id="password" placeholder="Password" required>
+    <button onclick="register()">Register</button>
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div id="game-container">
+    <h1>Welcome, <span id="user-name"></span>!</h1>
+    <div class="balance" id="balance">Balance: $0</div>
+    <div class="slot-reel">
+      <div class="reel" id="reel1">🍒</div>
+      <div class="reel" id="reel2">🍋</div>
+      <div class="reel" id="reel3">🍉</div>
+    </div>
+    <button onclick="spin()">Spin</button>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+    import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCl3q-2QUXzFB54LWceG7KmfYCrqDEJPtU",
+      authDomain: "game-442a1.firebaseapp.com",
+      databaseURL: "https://game-442a1-default-rtdb.firebaseio.com/",
+      projectId: "game-442a1",
+      storageBucket: "game-442a1.appspot.com",
+      messagingSenderId: "1013295828258",
+      appId: "1:1013295828258:web:a8b9b39b13a27ab4e5a97b",
+      measurementId: "G-T3QP3XVTJR"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    const authContainer = document.getElementById("auth-container");
+    const gameContainer = document.getElementById("game-container");
+    const userNameDisplay = document.getElementById("user-name");
+    const balanceDisplay = document.getElementById("balance");
+    let currentUsername = null;
+
+    const reelSymbols = ['🍒', '🍋', '🍉', '🍇', '🍊', '🍓', '⭐'];
+
+    function register() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (!username || !password) {
+        alert("Please fill in both fields.");
+        return;
+      }
+
+      const userRef = ref(database, "users/" + username);
+      get(userRef).then(snapshot => {
+        if (snapshot.exists()) {
+          alert("Username already exists. Please choose another.");
+        } else {
+          set(userRef, { password: password, balance: 1000 }).then(() => {
+            alert("Registration successful! You can now log in.");
+          });
+        }
+      });
+    }
+
+    function login() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (!username || !password) {
+        alert("Please fill in both fields.");
+        return;
+      }
+
+      const userRef = ref(database, "users/" + username);
+      get(userRef).then(snapshot => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          if (data.password === password) {
+            currentUsername = username;
+            userNameDisplay.textContent = username;
+            balanceDisplay.textContent = `Balance: $${data.balance}`;
+            authContainer.style.display = "none";
+            gameContainer.style.display = "block";
+          } else {
+            alert("Incorrect password.");
+          }
+        } else {
+          alert("User not found.");
+        }
+      });
+    }
+
+    function logout() {
+      currentUsername = null;
+      authContainer.style.display = "block";
+      gameContainer.style.display = "none";
+    }
+
+    function spin() {
+      const reel1 = document.getElementById("reel1");
+      const reel2 = document.getElementById("reel2");
+      const reel3 = document.getElementById("reel3");
+
+      const symbol1 = reelSymbols[Math.floor(Math.random() * reelSymbols.length)];
+      const symbol2 = reelSymbols[Math.floor(Math.random() * reelSymbols.length)];
+      const symbol3 = reelSymbols[Math.floor(Math.random() * reelSymbols.length)];
+
+      reel1.textContent = symbol1;
+      reel2.textContent = symbol2;
+      reel3.textContent = symbol3;
+
+      if (symbol1 === symbol2 && symbol2 === symbol3) {
+        updateBalance(100);
+        alert("You win $100!");
+      } else {
+        updateBalance(-50);
+        alert("You lose $50.");
+      }
+    }
+
+    function updateBalance(amount) {
+      const userRef = ref(database, "users/" + currentUsername);
+      get(userRef).then(snapshot => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const newBalance = data.balance + amount;
+          update(userRef, { balance: newBalance });
+          balanceDisplay.textContent = `Balance: $${newBalance}`;
+        }
+      });
+    }
+  </script>
+</body>
+</html>
